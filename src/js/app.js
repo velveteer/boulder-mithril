@@ -2,31 +2,30 @@
     'use strict';
 
     var chats = {
+        list: m.prop([]),
+        transcript: m.prop([]),
+        get: function(url) {
+                return m.request({method: 'GET', url: url})
+        },
         controller: function() {
-            this.account = m.prop('');
+            this.list = chats.list;
+            this.account = m.prop("");
             this.core = m.prop(false);
-            this.list = m.prop([]);
-            this.error = m.prop('');
             this.search = function(e) {
                 e.preventDefault();
                 if (!isNaN(parseInt(this.account()))) {
-                    return m.request({
-                        method: 'GET',
-                        url: this.core() ? 'api/chats/core/' + this.account() : 'api/chats/ddi/' + this.account()
-                    })
-                        .then(this.list, this.error)
+                    var url = this.core() ? 'api/chats/core/' + this.account() : 'api/chats/ddi/' + this.account()
+                    chats.get(url)
+                        .then(this.list)
                         .then(function() {
                             m.render(document.getElementById('table'), table(this));
                         }.bind(this))
                 }
             }.bind(this);
-
-            this.trans = m.prop([]);
+            this.trans = chats.transcript;
             this.transcript = function(e) {
-                m.request({
-                    method: 'GET',
-                    url: 'api/transcripts/' + e.target.value
-                })
+                var url = 'api/transcripts/' + e.target.value;
+                chats.get(url)
                     .then(this.trans)
                     .then(function() {
                         m.render(document.getElementById('transcript'), transcript(this));
@@ -74,31 +73,30 @@
                     m('th', 'Racker')
                 ])
             ]),
-            m('tbody', [ctrl.error() ? m('tr', 'Error occurred. Please try again.') :
-                ctrl.list().map(function(chat, index) {
-                    return m('tr', [
-                        m('td', [
-                            m('button.btn.btn-sm', {
-                                onclick: ctrl.transcript,
-                                value: chat.chatID
-                            }, 'Load')
-                        ]),
-                        m('td', moment(chat.answeredAt).toString()),
-                        m('td', chat.customerName),
-                        m('td', chat.rackerName)
-                    ])
-                })
-            ])
+            m('tbody', [ ctrl.list().map(function(chat, index) {
+                return m('tr', [
+                    m('td', [
+                        m('button[type=button].btn.btn-sm', {
+                            onclick: ctrl.transcript,
+                            value: chat.chatID
+                        }, 'Load')
+                    ]),
+                    m('td', moment(chat.answeredAt).toString()),
+                    m('td', chat.customerName),
+                    m('td', chat.rackerName)
+                ])
+            })])
         ]);
     }
 
     var transcript = function(ctrl) {
         return ctrl.trans().map(function(transcript, index) {
             return [
-                m('span', moment(transcript.createdAt).format('h:mma').toString() + ' '),
-                m('span', transcript.name + ': '),
-                m('span', transcript.text),
-                m('div.clear')
+                m('div.clear', [
+                    m('span', moment(transcript.createdAt).format('h:mma').toString() + ' '),
+                    m('span', transcript.name + ': '),
+                    m('span', transcript.text)
+                ])
             ]
         });
     }
