@@ -1,5 +1,23 @@
-.clear {
-    margin-top: 10px;
+@select: rgba(187, 228, 242, 0.5);
+
+.selected {
+    background: @select;
+    position: relative;
+}
+
+.selected:after {
+    width: 0;
+    height: 0;
+    content: "";
+    position: absolute;
+    display: block;
+    border-left: 15px solid @select;
+    border-bottom: 25px solid transparent;
+    border-top: 25px solid transparent;
+}
+
+.selected-button {
+    background: rgba(141, 242, 241, 1);
 }
 
 .table {
@@ -18,10 +36,27 @@ a {
     min-height: 10px;
 }
 
+#main {
+    padding-bottom: 20px;
+}
+
+#chats {
+    transition: all 1s;
+}
+
 #transcript {
-    border-left: 1px solid grey;
+    border-left: 2px solid grey;
     font-size: 12px;
-    overflow-x: auto;
+    line-height: 1.2em;
+    transition: all 1s;
+}
+
+#transcript-controls {
+    cursor: pointer;
+    margin-bottom: 20px;
+    margin-right: 40px;
+    display: block;
+    float: right;
 }
 
 #account {
