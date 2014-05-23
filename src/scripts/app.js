@@ -18,6 +18,7 @@
             this.account = chats.currentAccount;
             this.lastAccount = chats.lastAccount;
             this.trans = chats.transcript;
+
             this.sized = false;
             this.extended = false;
             this.rowsPerPage = 6;
@@ -188,7 +189,7 @@
     var controls = function(ctrl) {
         return m('ul.list-inline.text-center', [
             ctrl.startPage > 0 ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.prevPage}, '<<' )]) : null,
-            ctrl.numPages().slice(ctrl.startPage, ctrl.endPage).map(function(page, index) {
+            ctrl.numPages().length < 2 ? null : ctrl.numPages().slice(ctrl.startPage, ctrl.endPage).map(function(page, index) {
                 return m('li', [
                     m('a', {
                         onclick: ctrl.showPage,
