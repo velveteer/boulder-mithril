@@ -19,16 +19,26 @@ gulp.task('copy-index', function() {
         .pipe(gulp.dest('./dist'))
 });
 
+gulp.task('copy-cssAssets', function() {
+    gulp.src('./src/styles/assets/*')
+        .pipe(gulp.dest('./dist/css'))
+});
+
+gulp.task('copy-fonts', function() {
+    gulp.src('./src/fonts/*')
+        .pipe(gulp.dest('./dist/fonts'))
+});
+
 gulp.task('scripts', function() {
     return es.concat(
         // Detect errors and potential problems in your JavaScript code
         // You can enable or disable default JSHint options in the .jshintrc file
-        gulp.src(['./src/js/**/*.js'])
+        gulp.src(['!./src/scripts/vendor/**/*.js', './src/scripts/**/*.js'])
             .pipe(plugins.jshint('.jshintrc'))
             .pipe(plugins.jshint.reporter(require('jshint-stylish'))),
 
         // Concatenate, minify and copy all JavaScript (except vendor scripts)
-        gulp.src(['./src/js/**/*.js'])
+        gulp.src(['!./src/scripts/vendor/**/*.js', './src/scripts/**/*.js'])
             .pipe(plugins.concat('app.js'))
             .pipe(plugins.uglify())
             .pipe(gulp.dest('./dist/js'))
@@ -36,16 +46,15 @@ gulp.task('scripts', function() {
 });
 
 gulp.task('vendorJS', function(){
-    //concatenate vendor JS files
     gulp.src(['!./bower_components/**/*.min.js',
-        './bower_components/**/*.js'])
+        './bower_components/**/*.js', './src/scripts/vendor/**/*.js'])
         .pipe(plugins.concat('vendor.js'))
         .pipe(gulp.dest('./dist/js'));
 });
 
 gulp.task('styles', function() {
     // Compile LESS files
-    return gulp.src('./src/less/app.less')
+    return gulp.src('./src/styles/app.less')
         .pipe(plugins.less())
         .pipe(plugins.rename('app.css'))
         .pipe(plugins.csso())
@@ -53,9 +62,8 @@ gulp.task('styles', function() {
 });
 
 gulp.task('vendorCSS', function(){
-    //concatenate vendor CSS files
     gulp.src(['!./bower_components/**/*.min.css',
-        './bower_components/**/*.css', './src/less/vendor/*.css'])
+        './bower_components/**/*.css', './src/styles/vendor/*.css'])
         .pipe(plugins.concat('vendor.css'))
         .pipe(gulp.dest('./dist/css'));
 });
@@ -86,9 +94,10 @@ gulp.task('watch',function(){
     });
     gulp.watch('./src/**/*.js',['scripts']);
     gulp.watch('./src/**/*.less',['styles']);
+    gulp.watch('./src/img/**/*',['copy-images']);
     gulp.watch('./src/index.html',['copy-index']);
 
 });
 
 // The default task (called when you run `gulp`)
-gulp.task('default', ['clean', 'connect', 'copy-index', 'scripts', 'styles', 'vendorJS', 'vendorCSS', 'watch']);
+gulp.task('default', ['clean', 'connect', 'copy-index', 'copy-cssAssets', 'copy-fonts', 'scripts', 'styles', 'vendorJS', 'vendorCSS', 'watch']);

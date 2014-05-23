@@ -4,38 +4,44 @@
     var chats = {
         list: m.prop([]),
         transcript: m.prop([]),
-        lastAccount: '',
+        accountType: m.prop('ddi'),
+        currentAccount: m.prop(''),
+        lastAccount: m.prop(''),
         get: function(url) {
                 return m.request({method: 'GET', url: url})
         },
         controller: function() {
             this.list = chats.list;
-            this.account = m.prop('');
-            this.core = m.prop(false);
+            this.accountType = chats.accountType;
+            this.account = chats.currentAccount;
+            this.lastAccount = chats.lastAccount;
+            this.trans = chats.transcript;
+            this.sized = false;
+            this.extended = false;
+
             this.search = function(e) {
                 e.preventDefault();
-                if (chats.lastAccount !== this.account()) {
+                if (this.lastAccount() !== this.account()) {
                     clearSelected();
                 }
                 if (!isNaN(parseInt(this.account()))) {
-                    var url = this.core() ? 'api/chats/core/' + this.account() : 'api/chats/ddi/' + this.account()
+                    var url = 'api/chats/' + this.accountType() + '/' + this.account();
                     chats.get(url)
                         .then(this.list)
                         .then(function() { return tableRender(this)}.bind(this))
                 }
             }.bind(this);
-            this.trans = chats.transcript;
+
             this.transcript = function(e) {
                 var url = 'api/transcripts/' + e.target.value;
-                chats.lastAccount = this.account();
+                this.lastAccount(this.account());
                 clearSelected();
-                $(e.target).closest('tr').addClass('selected');
-                $(e.target).html('Loaded').addClass('selected-button');
+                makeSelected(e.target);
                 chats.get(url)
                     .then(this.trans)
                     .then(function() { return transcriptRender(this)}.bind(this))
             }.bind(this);
-            this.sized = false;
+
             this.resize = function() {
                 if (this.sized) {
                     this.sized = false;
@@ -44,6 +50,18 @@
                 } else {
                     this.sized = true;
                     transcriptMaximize();
+                    transcriptRender(this);
+                }
+            }.bind(this)
+
+            this.extend = function() {
+                if (this.extended) {
+                    this.extended = false;
+                    transcriptUndoExtend();
+                    transcriptRender(this);
+                } else {
+                    this.extended = true;
+                    transcriptDoExtend();
                     transcriptRender(this);
                 }
             }.bind(this)
@@ -62,20 +80,31 @@
                                 value: ctrl.account()
                             }),
                         ]),
-                        m('div.checkbox', [
-                            m('label[for=core]', [
-                                m('input[type=checkbox]#core', {
-                                    onchange: m.withAttr('checked', ctrl.core),
-                                    checked: ctrl.core()
-                                }), 'CORE'
+                        m('div.btn-group', {'data-toggle': 'buttons'}, [
+                            m('label.btn.btn-primary.btn-sm.active', {
+                                onclick: m.withAttr('value', ctrl.accountType),
+                                value: 'ddi'
+                                }, [ 'DDI', m('input[type=radio]')
+                            ]),
+                            m('label.btn.btn-primary.btn-sm', {
+                                onclick: m.withAttr('value', ctrl.accountType),
+                                value: 'core'
+                                }, ['Core', m('input[type=radio].btn.btn-default.btn-sm')
+                            ]),
+                            m('label.btn.btn-primary.btn-sm', {
+                                onclick: m.withAttr('value', ctrl.accountType),
+                                value: 'ea'
+                                }, [ 'E&A', m('input[type=radio].btn.btn-default.btn-sm')
                             ]),
                         ]),
-                        m('button[type=submit].btn.btn-sm', 'Search'),
                         m('div#table')
                     ])
                 ]),
-                m('span#transcript-controls', {onclick: ctrl.resize}),
-                m('div.col-md-6#transcript')
+                m('div#transcript-controls', [
+                    m('span#transcript-extend', {onclick: ctrl.extend}),
+                    m('span#transcript-resize', {onclick: ctrl.resize})
+                ]),
+                m('div.col-md-6.unextended#transcript')
             ])
         }
     }
@@ -122,17 +151,27 @@
         });
     }
 
-    var transcriptControls = function(ctrl) {
+    var transcriptResize = function(ctrl) {
         if (ctrl.sized) {
-            return m('i.fa.fa-long-arrow-right.fa-2x');
+            return m('i.fa.fa-text-width.fa-2x.enabled');
         } else {
-            return m('i.fa.fa-long-arrow-left.fa-2x');
+            return m('i.fa.fa-text-width.fa-2x');
+        }
+    }
+
+    var transcriptExtend = function(ctrl) {
+        if (ctrl.extended) {
+            return m('i.fa.fa-text-height.fa-2x.enabled');
+        } else {
+            return m('i.fa.fa-text-height.fa-2x');
         }
     }
 
     var transcriptRender = function(ctrl) {
         m.render(document.getElementById('transcript'), transcript(ctrl));
-        m.render(document.getElementById('transcript-controls'), transcriptControls(ctrl));
+        m.render(document.getElementById('transcript-resize'), transcriptResize(ctrl));
+        m.render(document.getElementById('transcript-extend'), transcriptExtend(ctrl));
+        $('#transcript').scrollTop(0);
     }
 
     var transcriptMaximize = function() {
@@ -149,9 +188,23 @@
         $('#chats').addClass('col-md-6');
     }
 
+    var transcriptDoExtend = function() {
+        $('#transcript').removeClass('unextended');
+        $('#transcript').addClass('extended');
+    }
+
+    var transcriptUndoExtend = function() {
+        $('#transcript').removeClass('extended');
+        $('#transcript').addClass('unextended');
+    }
+
+    var makeSelected = function(e) {
+        $(e).closest('tr').addClass('selected');
+        $(e).addClass('selected-button');
+    }
+
     var clearSelected = function() {
         $('.selected').removeClass('selected');
-        $('.selected-button').html('Load');
         $('.selected-button').removeClass('selected-button');
     }
 
