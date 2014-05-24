@@ -7,119 +7,34 @@
 
     var metrics = {};
 
-    metrics.controller = function() {};
-    metrics.view = function(ctrl) { return m('div', 'Metrics')};
+    metrics.controller = function() {
+        this.list = mPaginate.list;
+        this.sso = m.route.param('sso') || null;
+        var url = '/api/chats/sso/'+this.sso;
+        get(url).then(this.list);
+    }
+
+    metrics.view = function(ctrl) {};
 
     var chats = {};
 
-    chats.chatID = m.prop('');
-    chats.list = m.prop([]);
-    chats.trans = m.prop([]);
+    chats.account = m.prop('');
     chats.accountType = m.prop('ddi');
-    chats.currentAccount = m.prop('');
-    chats.lastAccount = m.prop('');
 
     chats.controller = function() {
-        this.chatID = chats.chatID;
-        this.list = chats.list;
+        this.list = mPaginate.list;
+        this.account = chats.account;
         this.accountType = chats.accountType;
-        this.account = chats.currentAccount;
-        this.lastAccount = chats.lastAccount;
-        this.trans = chats.trans;
-
-        this.sized = false;
-        this.extended = false;
-        this.rowsPerPage = 6;
-        this.currentPage = 1;
-        this.startPage = 0;
-        this.endPage = 5;
-
-        this.paginated = function() {
-            return this.list().slice((this.currentPage-1) * this.rowsPerPage,
-                ((this.currentPage-1)*this.rowsPerPage) + this.rowsPerPage)
-        }.bind(this);
-
-        this.numPages = function() {
-            var numPages = 0;
-            if (this.list() !== null && this.rowsPerPage !== null) {
-                numPages = Math.ceil(this.list().length / this.rowsPerPage);
-            }
-            return range(1, numPages+1);
-        }.bind(this);
-
-        this.showPage = function(e) {
-            this.currentPage = e.target.innerHTML;
-            chats.clearSelected();
-            chats.tableRender(this);
-            chats.controlsRender(this);
-        }.bind(this);
-
-        this.nextPage = function() {
-            if (this.endPage !== this.numPages) {
-                ++this.startPage;
-                ++this.endPage;
-                chats.controlsRender(this);
-            }
-        }.bind(this);
-
-        this.prevPage = function() {
-            if (this.startPage > 0) {
-                --this.startPage;
-                --this.endPage;
-                chats.controlsRender(this);
-            }
-        }.bind(this);
 
         this.search = function(e) {
             e.preventDefault();
-            if (this.lastAccount() !== this.account()) {
-                chats.clearSelected();
-            }
             if (!isNaN(parseInt(this.account()))) {
-                this.currentPage = 1;
                 var url = 'api/chats/' + this.accountType() + '/' + this.account();
                 get(url)
                     .then(this.list)
-                    .then(function() { return chats.tableRender(this)}.bind(this))
-                    .then(function() { return chats.controlsRender(this)}.bind(this))
+                    .then(function() { return m.module(document.getElementById('table'), mPaginate); })
             }
         }.bind(this);
-
-        this.transcript = function(e) {
-            var url = 'api/transcripts/' + e.target.value;
-            this.chatID(e.target.value);
-            this.lastAccount(this.account());
-            chats.clearSelected();
-            chats.makeSelected(e.target);
-            get(url)
-                .then(this.trans)
-                .then(function() { return chats.transcriptRender(this)}.bind(this))
-        }.bind(this);
-
-        this.resize = function() {
-            if (this.sized) {
-                this.sized = false;
-                chats.transcriptMinimize();
-                chats.transcriptRender(this);
-            } else {
-                this.sized = true;
-                chats.transcriptMaximize();
-                chats.transcriptRender(this);
-            }
-        }.bind(this)
-
-        this.extend = function() {
-            if (this.extended) {
-                this.extended = false;
-                chats.transcriptUndoExtend();
-                chats.transcriptRender(this);
-            } else {
-                this.extended = true;
-                chats.transcriptDoExtend();
-                chats.transcriptRender(this);
-            }
-        }.bind(this)
-
     };
 
     chats.view = function(ctrl) {
@@ -151,136 +66,92 @@
                             value: 'ea'
                             }, [ 'E&A', m('input[type=radio].btn.btn-default.btn-sm')
                         ]),
-                    ]),
-                    m('div#table'),
-                    m('div#controls')
-                ])
-            ]),
-            m('div#transcript-controls', [
-                m('span#transcript-extend', {onclick: ctrl.extend}),
-                m('span#transcript-resize', {onclick: ctrl.resize})
+                    ])
+                ]),
+                m('div#table')
             ]),
             m('div.col-md-6.unextended#transcript')
         ])
     };
 
-    chats.table = function(ctrl) {
-        return m('table.table', [
-            m('thead', [
-                m('tr', [
-                    m('th', 'Transcript'),
-                    m('th', 'Date'),
-                    m('th', 'Customer'),
-                    m('th', 'Racker')
-                ])
+    var transcripts = {};
+    transcripts.chatID = m.prop('');
+    transcripts.list = m.prop([]);
+    transcripts.get = function(e) {
+        var url = 'api/transcripts/' + e.target.value;
+        transcripts.chatID(e.target.value);
+        get(url)
+            .then(transcripts.list)
+            .then(function() { return m.module(document.getElementById('transcript'), transcripts) });
+        }.bind(this);
+
+    transcripts.controller = function() {
+
+        this.sized = m.prop(false);
+        this.extended = m.prop(false);
+        this.list = transcripts.list;
+
+        this.resize = function() {
+            if (this.sized()) {
+                this.sized(false);
+                transcriptMinimize();
+            } else {
+                this.sized(true);
+                transcriptMaximize();
+            }
+        }.bind(this)
+
+        this.extend = function() {
+            if (this.extended()) {
+                this.extended(false);
+                transcriptUndoExtend();
+            } else {
+                this.extended(true);
+                transcriptDoExtend();
+            }
+        }.bind(this)
+    }
+
+    transcripts.view = function(ctrl) {
+        return m('div', [
+            m('div#transcript-controls', [
+                m('i.fa.fa-text-height.fa-2x', {onclick: ctrl.extend, class: ctrl.extended() ? 'enabled' : ''}),
+                m('i.fa.fa-text-width.fa-2x', {onclick: ctrl.resize, class: ctrl.sized() ? 'enabled' : ''})
             ]),
-            m('tbody', [ ctrl.paginated().map(function(chat, index) {
-                return m('tr', [
-                    m('td', [
-                        m('button[type=button].btn.btn-sm', {
-                            onclick: ctrl.transcript,
-                            value: chat.chatID
-                        }, 'Load')
-                    ]),
-                    m('td', moment(chat.answeredAt).format('MM-DD-YYYY h:mma')),
-                    m('td', chat.customerName),
-                    m('td', chat.rackerName)
-                ])
-            })])
-        ]);
-    }
-
-    chats.tableRender = function(ctrl) {
-        m.render(document.getElementById('table'), chats.table(ctrl));
-        if (ctrl.chatID()) chats.makeSelected('.btn[value='+ctrl.chatID()+']');
-    }
-
-    chats.controls = function(ctrl) {
-        return m('ul.list-inline.text-center', [
-            ctrl.startPage > 0 ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.prevPage}, '<<' )]) : null,
-            ctrl.numPages().length < 2 ? null : ctrl.numPages().slice(ctrl.startPage, ctrl.endPage).map(function(page, index) {
-                return m('li', [
-                    m('a', {
-                        onclick: ctrl.showPage,
-                        class: ctrl.currentPage == page ? 'btn btn-default btn-sm active' : 'btn btn-default btn-sm'},
-                    page)
-                ])
-            }),
-            ctrl.numPages().length > ctrl.endPage ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.nextPage}, '>>')]) : null
+            ctrl.list().map(function(transcript, index) {
+                return [
+                    m('div.text-line', [
+                        m('span[style=font-style:oblique]', moment(transcript.createdAt).format('h:mma').toString() + ' '),
+                        m('span', {style: {color: transcript.personType ? '#660000' : '#003399', fontWeight: 'bold'}}, transcript.name + ': '),
+                        m('span', transcript.text)
+                    ])
+                ]
+            })
         ])
     }
 
-    chats.controlsRender = function(ctrl) {
-        m.render(document.getElementById('controls'), chats.controls(ctrl));
-    }
-
-    chats.transcript = function(ctrl) {
-        return ctrl.trans().map(function(transcript, index) {
-            return [
-                m('div.text-line', [
-                    m('span[style=font-style:oblique]', moment(transcript.createdAt).format('h:mma').toString() + ' '),
-                    m('span', {style: {color: transcript.personType ? '#660000' : '#003399', fontWeight: 'bold'}}, transcript.name + ': '),
-                    m('span', transcript.text)
-                ])
-            ]
-        });
-    }
-
-    chats.transcriptResize = function(ctrl) {
-        if (ctrl.sized) {
-            return m('i.fa.fa-text-width.fa-2x.enabled');
-        } else {
-            return m('i.fa.fa-text-width.fa-2x');
-        }
-    }
-
-    chats.transcriptExtend = function(ctrl) {
-        if (ctrl.extended) {
-            return m('i.fa.fa-text-height.fa-2x.enabled');
-        } else {
-            return m('i.fa.fa-text-height.fa-2x');
-        }
-    }
-
-    chats.transcriptRender = function(ctrl) {
-        m.render(document.getElementById('transcript'), chats.transcript(ctrl));
-        m.render(document.getElementById('transcript-resize'), chats.transcriptResize(ctrl));
-        m.render(document.getElementById('transcript-extend'), chats.transcriptExtend(ctrl));
-        $('#transcript').scrollTop(0);
-    }
-
-    chats.transcriptMaximize = function() {
+    var transcriptMaximize = function() {
         $('#transcript').removeClass('col-md-6');
         $('#transcript').addClass('col-md-8');
         $('#chats').removeClass('col-md-6');
         $('#chats').addClass('col-md-4');
     }
 
-    chats.transcriptMinimize = function() {
+    var transcriptMinimize = function() {
         $('#transcript').removeClass('col-md-8');
         $('#transcript').addClass('col-md-6');
         $('#chats').removeClass('col-md-4');
         $('#chats').addClass('col-md-6');
     }
 
-    chats.transcriptDoExtend = function() {
+    var transcriptDoExtend = function() {
         $('#transcript').removeClass('unextended');
         $('#transcript').addClass('extended');
     }
 
-    chats.transcriptUndoExtend = function() {
+    var transcriptUndoExtend = function() {
         $('#transcript').removeClass('extended');
         $('#transcript').addClass('unextended');
-    }
-
-    chats.makeSelected = function(e) {
-        $(e).closest('tr').addClass('selected');
-        $(e).addClass('selected-button');
-    }
-
-    chats.clearSelected = function() {
-        $('.selected').removeClass('selected');
-        $('.selected-button').removeClass('selected-button');
     }
 
     var range = function(start, stop, step) {
@@ -302,10 +173,103 @@
             return range;
     }
 
+    var mPaginate = {};
+
+    mPaginate.list = m.prop(range(1, 10));
+    mPaginate.rowsPerPage = m.prop(3);
+    mPaginate.currentPage = m.prop(1);
+    mPaginate.startPage = m.prop(0);
+    mPaginate.endPage = m.prop(5);
+
+    mPaginate.controller = function() {
+
+        this.rowsPerPage = mPaginate.rowsPerPage;
+        this.currentPage = mPaginate.currentPage;
+        this.startPage = mPaginate.startPage;
+        this.endPage = mPaginate.endPage;
+        this.list = mPaginate.list;
+
+        this.paginated = function() {
+            return this.list().slice((this.currentPage()-1) * this.rowsPerPage(),
+                ((this.currentPage()-1)*this.rowsPerPage()) + this.rowsPerPage())
+        }
+
+        this.numPages = function() {
+            var numPages = 0;
+            if (this.list() !== null && this.rowsPerPage() !== null) {
+                numPages = Math.ceil(this.list().length / this.rowsPerPage());
+            }
+            return range(1, numPages+1);
+        }.bind(this);
+
+        this.showPage = function(e) {
+            this.currentPage = e.target.innerHTML;
+        }.bind(this);
+
+        this.nextPage = function() {
+            var start = this.startPage();
+            var end = this.endPage();
+            if (this.endPage() !== this.numPages()) {
+                this.startPage(start + 1);
+                this.endPage(end + 1);
+            }
+        }.bind(this);
+
+        this.prevPage = function() {
+            var start = this.startPage();
+            var end = this.endPage();
+            if (this.startPage() > 0) {
+                this.startPage(start - 1);
+                this.endPage(end - 1);
+            }
+        }.bind(this);
+    }
+
+    mPaginate.view = function(ctrl) {
+        return m('div', [
+            m('table.table', [
+                m('thead', [
+                    m('tr', [
+                        m('th', 'Transcript'),
+                        m('th', 'Date'),
+                        m('th', 'Customer'),
+                        m('th', 'Racker')
+                    ])
+                ]),
+                m('tbody', [ ctrl.paginated().map(function(chat, index) {
+                    return m('tr', {class: chat.chatID == transcripts.chatID() ? 'selected' : ''}, [
+                        m('td', [
+                            m('button[type=button].btn.btn-sm', {
+                                onclick: transcripts.get,
+                                value: chat.chatID
+                            }, 'Load')
+                        ]),
+                        m('td', moment(chat.answeredAt).format('MM-DD-YYYY h:mma')),
+                        m('td', chat.customerName),
+                        m('td', chat.rackerName)
+                    ])
+                    })
+                ]),
+            ]),
+            m('ul.list-inline.text-center', [
+                ctrl.startPage() > 0 ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.prevPage}, '<<' )]) : null,
+                ctrl.numPages().length < 2 ? null : ctrl.numPages().slice(ctrl.startPage(), ctrl.endPage()).map(function(page, index) {
+                    return m('li', [
+                        m('a', {
+                            onclick: m.withAttr('innerHTML', ctrl.currentPage),
+                            class: ctrl.currentPage() == page ? 'btn btn-default btn-sm active' : 'btn btn-default btn-sm'}, page)
+                        ])
+                    }),
+                ctrl.numPages().length > ctrl.endPage() ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.nextPage}, '>>')]) : null
+            ])
+        ])
+    }
+
     m.route.mode = 'pathname';
     m.route(document.getElementById('main'), '/', {
         '/': chats,
-        '/metrics': metrics
+        '/metrics': metrics,
+        '/metrics/:sso': metrics
     });
 
 })(window);
