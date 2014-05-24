@@ -44,7 +44,7 @@
             if (this.list() !== null && this.rowsPerPage !== null) {
                 numPages = Math.ceil(this.list().length / this.rowsPerPage);
             }
-            return chats.range(1, numPages+1);
+            return range(1, numPages+1);
         }.bind(this);
 
         this.showPage = function(e) {
@@ -52,7 +52,6 @@
             chats.clearSelected();
             chats.tableRender(this);
             chats.controlsRender(this);
-            if (this.chatID()) chats.makeSelected('.btn[value='+this.chatID()+']');
         }.bind(this);
 
         this.nextPage = function() {
@@ -77,6 +76,7 @@
                 chats.clearSelected();
             }
             if (!isNaN(parseInt(this.account()))) {
+                this.currentPage = 1;
                 var url = 'api/chats/' + this.accountType() + '/' + this.account();
                 get(url)
                     .then(this.list)
@@ -192,6 +192,7 @@
 
     chats.tableRender = function(ctrl) {
         m.render(document.getElementById('table'), chats.table(ctrl));
+        if (ctrl.chatID()) chats.makeSelected('.btn[value='+ctrl.chatID()+']');
     }
 
     chats.controls = function(ctrl) {
@@ -216,7 +217,7 @@
     chats.transcript = function(ctrl) {
         return ctrl.trans().map(function(transcript, index) {
             return [
-                m('div', [
+                m('div.text-line', [
                     m('span[style=font-style:oblique]', moment(transcript.createdAt).format('h:mma').toString() + ' '),
                     m('span', {style: {color: transcript.personType ? '#660000' : '#003399', fontWeight: 'bold'}}, transcript.name + ': '),
                     m('span', transcript.text)
@@ -282,7 +283,7 @@
         $('.selected-button').removeClass('selected-button');
     }
 
-    chats.range = function(start, stop, step) {
+    var range = function(start, stop, step) {
         if (arguments.length <= 1) {
               stop = start || 0;
               start = 0;
