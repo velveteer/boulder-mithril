@@ -40,7 +40,7 @@ gulp.task('scripts', function() {
         // Concatenate, minify and copy all JavaScript (except vendor scripts)
         gulp.src(['!./src/scripts/vendor/**/*.js', './src/scripts/**/*.js'])
             .pipe(plugins.concat('app.js'))
-            .pipe(plugins.uglify())
+//            .pipe(plugins.uglify())
             .pipe(gulp.dest('./dist/js'))
     );
 });
