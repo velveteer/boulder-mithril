@@ -6,109 +6,136 @@
     }
 
     // Pagination for tables
-    var mPaginate = {};
+    var MPaginate = function() {
+        var that = this;
+        this.rowsPerPage = m.prop(5);
+        this.startPage = m.prop(0);
+        this.endPage = m.prop(5);
+        this.list = m.prop([]);
+        this.headers = m.prop([]);
+        this.cells = m.prop([]);
+        this.rowStyle = m.prop({});
 
-    mPaginate.list = m.prop([]);
-    mPaginate.rowsPerPage = m.prop(3);
-    mPaginate.startPage = m.prop(0);
-    mPaginate.endPage = m.prop(5);
-    mPaginate.headers = m.prop([]);
-    mPaginate.cells = m.prop([]);
+        this.controller = function() {
+            this.currentPage = m.prop(1);
+            this.rowsPerPage = that.rowsPerPage;
+            this.startPage = that.startPage;
+            this.endPage = that.endPage;
+            this.list = that.list;
+            this.rowStyle = that.rowStyle;
 
-    mPaginate.controller = function() {
-
-        this.currentPage = m.prop(1);
-        this.rowsPerPage = mPaginate.rowsPerPage;
-        this.startPage = mPaginate.startPage;
-        this.endPage = mPaginate.endPage;
-        this.list = mPaginate.list;
-        this.headers = mPaginate.headers;
-        this.cells = mPaginate.cells;
-
-        this.paginated = function() {
-            return this.list().slice((this.currentPage()-1) * this.rowsPerPage(),
-                ((this.currentPage()-1)*this.rowsPerPage()) + this.rowsPerPage())
-        }.bind(this);
-
-        this.numPages = function() {
-            var numPages = 0;
-            if (this.list() !== null && this.rowsPerPage() !== null) {
-                numPages = Math.ceil(this.list().length / this.rowsPerPage());
+            if (that.headers().length > 0) {
+                this.headers = that.headers;
+            } else {
+                this.headers = function() { return Object.keys(this.list()[0]) };
             }
-            return range(1, numPages+1);
-        }.bind(this);
 
-        this.showPage = function(e) {
-            this.currentPage(e.target.innerHTML);
-        }.bind(this);
-
-        this.nextPage = function() {
-            var start = this.startPage();
-            var end = this.endPage();
-            if (this.endPage() !== this.numPages()) {
-                this.startPage(start + 1);
-                this.endPage(end + 1);
+            if (that.cells().length > 0) {
+                this.cells = that.cells;
+            } else {
+                this.cells = function() {
+                    var cells = [];
+                    var obj = Object.keys(this.list()[0]);
+                    var vals = Object.keys(obj).map(function(key) {
+                        cells.push(obj[key]);
+                    });
+                    return cells;
+                }
             }
-        }.bind(this);
 
-        this.prevPage = function() {
-            var start = this.startPage();
-            var end = this.endPage();
-            if (this.startPage() > 0) {
-                this.startPage(start - 1);
-                this.endPage(end - 1);
-            }
-        }.bind(this);
-    }
+            this.paginated = function() {
+                return this.list().slice((this.currentPage()-1) * this.rowsPerPage(),
+                    ((this.currentPage()-1)*this.rowsPerPage()) + this.rowsPerPage())
+            }.bind(this);
 
-    mPaginate.view = function(ctrl) {
-        return m('div', [
-            m('table.table', [
-                m('thead', [
-                    m('tr', [
-                        ctrl.headers().map(function(header, index) {
-                            return m('th', header)
-                        })
-                    ])
-                ]),
-                m('tbody', [
-                    ctrl.paginated().map(function(item, index) {
-                        return m('tr', {class: item.chatID == transcripts.chatID() ? 'selected' : null}, [
-                            ctrl.cells().map(function(cell, index) {
-                                if (typeof(cell) === 'string') {
-                                    return m('td', item[cell])
-                                } else if (typeof(cell) === 'function') {
-                                    return m('td', [
-                                        cell.call(item)
-                                    ])
-                                }
+            this.numPages = function() {
+                var numPages = 0;
+                if (this.list() !== null && this.rowsPerPage() !== null) {
+                    numPages = Math.ceil(this.list().length / this.rowsPerPage());
+                }
+                return range(1, numPages+1);
+            }.bind(this);
+
+            this.nextPage = function() {
+                var start = this.startPage();
+                var end = this.endPage();
+                if (this.endPage() !== this.numPages()) {
+                    this.startPage(start + 1);
+                    this.endPage(end + 1);
+                }
+            }.bind(this);
+
+            this.prevPage = function() {
+                var start = this.startPage();
+                var end = this.endPage();
+                if (this.startPage() > 0) {
+                    this.startPage(start - 1);
+                    this.endPage(end - 1);
+                }
+            }.bind(this);
+        }
+
+        this.view = function(ctrl) {
+            return m('div', [
+                m('table.table', [
+                    m('thead', [
+                        m('tr', [
+                            ctrl.headers().map(function(header, index) {
+                                return m('th', header)
                             })
                         ])
-                    })
+                    ]),
+                    m('tbody', [
+                        ctrl.paginated().map(function(item, index) {
+                            return m('tr', (function() {
+                                    if (typeof(ctrl.rowStyle()) === 'function') {
+                                        return ctrl.rowStyle().bind(item)();
+                                    } else if (typeof(ctrl.rowStyle()) === 'object') {
+                                        return ctrl.rowStyle();
+                                    }
+                            })(), [
+                                ctrl.cells().map(function(cell, index) {
+                                    if (typeof(cell) === 'string') {
+                                        return m('td', item[cell])
+                                    } else if (typeof(cell) === 'function') {
+                                        return m('td', [
+                                            cell.call(item)
+                                        ])
+                                    }
+                                })
+                            ])
+                        })
+                    ]),
                 ]),
-            ]),
-            m('ul.list-inline.text-center', [
-                ctrl.startPage() > 0 ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.prevPage}, '<<' )]) : null,
-                ctrl.numPages().length < 2 ? null : ctrl.numPages().slice(ctrl.startPage(), ctrl.endPage()).map(function(page, index) {
-                    return m('li', [
-                        m('a', {
-                            onclick: m.withAttr('innerHTML', ctrl.currentPage),
-                            class: ctrl.currentPage() == page ? 'btn btn-default btn-sm active' : 'btn btn-default btn-sm'}, page)
-                        ])
-                    }),
-                ctrl.numPages().length > ctrl.endPage() ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.nextPage}, '>>')]) : null
+                m('ul.list-inline.text-center', [
+                    ctrl.startPage() > 0 ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.prevPage}, '<<' )]) : null,
+                    ctrl.numPages().length < 2 ? null : ctrl.numPages().slice(ctrl.startPage(), ctrl.endPage()).map(function(page, index) {
+                        return m('li', [
+                            m('a', {
+                                onclick: m.withAttr('innerHTML', ctrl.currentPage),
+                                class: ctrl.currentPage() == page ? 'btn btn-default btn-sm active' : 'btn btn-default btn-sm'}, page)
+                            ])
+                        }),
+                    ctrl.numPages().length > ctrl.endPage() ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.nextPage}, '>>')]) : null
+                ])
             ])
-        ])
+        }
     }
 
     var metrics = {};
 
     metrics.controller = function() {
-        this.sso = m.route.param('sso') || null;
+        this.sso = m.route.param('sso');
         var url = '/api/chats/sso/'+this.sso;
+        metrics.paginate = new MPaginate();
+        get(url)
+            .then(metrics.paginate.list)
+            .then(function() { return m.module(document.getElementById('main'), metrics.paginate) });
     }
 
-    metrics.view = function(ctrl) {};
+    metrics.view = function(ctrl) {
+        return m('div#table2')
+    };
 
     var chats = {};
 
@@ -124,9 +151,11 @@
     chats.account = m.prop('');
     chats.accountType = m.prop('ddi');
 
-    chats.paginate = Object.create(mPaginate);
+    chats.paginate = new MPaginate();
+    chats.paginate.rowsPerPage(6);
     chats.paginate.headers(['Transcript', 'Date', 'Customer', 'Racker']);
     chats.paginate.cells([chats.loadButton, 'answeredAt', 'customerName', 'rackerName']);
+    chats.paginate.rowStyle(function() { return {class: this.chatID == transcripts.chatID() ? 'selected' : null} });
 
     // Controller
     chats.controller = function() {
@@ -296,7 +325,6 @@
     m.route.mode = 'pathname';
     m.route(document.getElementById('main'), '/', {
         '/': chats,
-        '/metrics': metrics,
         '/metrics/:sso': metrics
     });
 
