@@ -5,123 +5,6 @@
         return m.request({method: 'GET', url: url})
     }
 
-    // Pagination for tables
-    var MPaginate = function() {
-        var that = this;
-        this.rowsPerPage = m.prop(5);
-        this.startPage = m.prop(0);
-        this.endPage = m.prop(5);
-        this.list = m.prop([]);
-        this.headers = m.prop([]);
-        this.cells = m.prop([]);
-        this.rowStyle = m.prop({});
-
-        this.controller = function() {
-            this.currentPage = m.prop(1);
-            this.rowsPerPage = that.rowsPerPage;
-            this.startPage = that.startPage;
-            this.endPage = that.endPage;
-            this.list = that.list;
-            this.rowStyle = that.rowStyle;
-
-            if (that.headers().length > 0) {
-                this.headers = that.headers;
-            } else {
-                this.headers = function() { return Object.keys(this.list()[0]) };
-            }
-
-            if (that.cells().length > 0) {
-                this.cells = that.cells;
-            } else {
-                this.cells = function() {
-                    var cells = [];
-                    var obj = Object.keys(this.list()[0]);
-                    var vals = Object.keys(obj).map(function(key) {
-                        cells.push(obj[key]);
-                    });
-                    return cells;
-                }
-            }
-
-            this.paginated = function() {
-                return this.list().slice((this.currentPage()-1) * this.rowsPerPage(),
-                    ((this.currentPage()-1)*this.rowsPerPage()) + this.rowsPerPage())
-            }.bind(this);
-
-            this.numPages = function() {
-                var numPages = 0;
-                if (this.list() !== null && this.rowsPerPage() !== null) {
-                    numPages = Math.ceil(this.list().length / this.rowsPerPage());
-                }
-                return range(1, numPages+1);
-            }.bind(this);
-
-            this.nextPage = function() {
-                var start = this.startPage();
-                var end = this.endPage();
-                if (this.endPage() !== this.numPages()) {
-                    this.startPage(start + 1);
-                    this.endPage(end + 1);
-                }
-            }.bind(this);
-
-            this.prevPage = function() {
-                var start = this.startPage();
-                var end = this.endPage();
-                if (this.startPage() > 0) {
-                    this.startPage(start - 1);
-                    this.endPage(end - 1);
-                }
-            }.bind(this);
-        }
-
-        this.view = function(ctrl) {
-            return m('div', [
-                m('table.table', [
-                    m('thead', [
-                        m('tr', [
-                            ctrl.headers().map(function(header, index) {
-                                return m('th', header)
-                            })
-                        ])
-                    ]),
-                    m('tbody', [
-                        ctrl.paginated().map(function(item, index) {
-                            return m('tr', (function() {
-                                    if (typeof(ctrl.rowStyle()) === 'function') {
-                                        return ctrl.rowStyle().bind(item)();
-                                    } else if (typeof(ctrl.rowStyle()) === 'object') {
-                                        return ctrl.rowStyle();
-                                    }
-                            })(), [
-                                ctrl.cells().map(function(cell, index) {
-                                    if (typeof(cell) === 'string') {
-                                        return m('td', item[cell])
-                                    } else if (typeof(cell) === 'function') {
-                                        return m('td', [
-                                            cell.call(item)
-                                        ])
-                                    }
-                                })
-                            ])
-                        })
-                    ]),
-                ]),
-                m('ul.list-inline.text-center', [
-                    ctrl.startPage() > 0 ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.prevPage}, '<<' )]) : null,
-                    ctrl.numPages().length < 2 ? null : ctrl.numPages().slice(ctrl.startPage(), ctrl.endPage()).map(function(page, index) {
-                        return m('li', [
-                            m('a', {
-                                onclick: m.withAttr('innerHTML', ctrl.currentPage),
-                                class: ctrl.currentPage() == page ? 'btn btn-default btn-sm active' : 'btn btn-default btn-sm'}, page)
-                            ])
-                        }),
-                    ctrl.numPages().length > ctrl.endPage() ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.nextPage}, '>>')]) : null
-                ])
-            ])
-        }
-    }
-
     var metrics = {};
 
     metrics.controller = function() {
@@ -133,18 +16,18 @@
             .then(function() { return m.module(document.getElementById('main'), metrics.paginate) });
     }
 
-    metrics.view = function(ctrl) {
-        return m('div#table2')
-    };
+    metrics.view = function(ctrl) { return m('div#metrics') };
 
     var chats = {};
 
     chats.loadButton = function() {
-        return m('button[type=button].btn.btn-sm', {
-            onclick: transcripts.get,
-            value: this.chatID,
-            style: {visibility: this.chatID == transcripts.chatID() ? 'hidden' : 'visible'}
-        }, 'Load')
+        return [
+            m('button[type=button].btn.btn-sm', {
+                onclick: transcripts.get,
+                value: this.chatID,
+                style: {visibility: this.chatID == transcripts.chatID() ? 'hidden' : 'visible'}
+            }, 'Load')
+        ]
     }
 
     // Model
