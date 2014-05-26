@@ -6,11 +6,11 @@
     }
 
     var metrics = {};
+        metrics.paginate = new MPaginate();
 
     metrics.controller = function() {
         this.sso = m.route.param('sso');
         var url = '/api/chats/sso/'+this.sso;
-        metrics.paginate = new MPaginate();
         get(url)
             .then(metrics.paginate.list)
             .then(function() { return m.module(document.getElementById('main'), metrics.paginate) });
@@ -50,8 +50,8 @@
             if (!isNaN(parseInt(this.account()))) {
                 var url = 'api/chats/' + this.accountType() + '/' + this.account();
                 get(url)
-                    .then(function(list) {
-                        chats.paginate.list(list);
+                    .then(chats.paginate.list)
+                    .then(function() {
                         return m.module(document.getElementById('table'), chats.paginate);
                     })
             }
@@ -183,26 +183,6 @@
     var transcriptUndoExtend = function() {
         $('#transcripts').removeClass('extended');
         $('#transcripts').addClass('unextended');
-    }
-
-    // Underscore range function
-    var range = function(start, stop, step) {
-        if (arguments.length <= 1) {
-              stop = start || 0;
-              start = 0;
-            }
-            step = arguments[2] || 1;
-
-            var length = Math.max(Math.ceil((stop - start) / step), 0);
-            var idx = 0;
-            var range = new Array(length);
-
-            while(idx < length) {
-              range[idx++] = start;
-              start += step;
-            }
-
-            return range;
     }
 
     m.route.mode = 'pathname';

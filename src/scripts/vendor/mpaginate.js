@@ -1,26 +1,17 @@
 function MPaginate() { 'use strict';
 
-    // Borrowing range function from Underscore
-    function range(start, stop, step) {
-        if (arguments.length <= 1) {
-              stop = start || 0;
-              start = 0;
-            }
-        step = arguments[2] || 1;
-
-        var length = Math.max(Math.ceil((stop - start) / step), 0);
+    var that = this; // Hold reference to closure
+    var range = function(start, stop) {
+        var length = Math.max(Math.ceil((stop - start)), 0);
         var idx = 0;
         var range = new Array(length);
-
-        while(idx < length) {
-          range[idx++] = start;
-          start += step;
-        }
-
+        while(idx < length) { range[idx++] = start; ++start; }
         return range;
     }
+    var keys = function() {
+        return typeof(this.list()[0]) === 'object' ? Object.keys(this.list()[0]) : []
+    };
 
-    var that = this; // Hold reference to closure
     this.rowsPerPage = m.prop(5); // How many rows to show per page
     this.list = m.prop([]); // A list of objects
     this.headers = m.prop([]); // List of headers for <th> elements
@@ -31,16 +22,14 @@ function MPaginate() { 'use strict';
         this.currentPage = m.prop(1); // Current page is reset on each load
         this.startPage = m.prop(0); // The first page the controls start on
         this.endPage = m.prop(5); // The last page to show in the controls
-
         this.rowsPerPage = that.rowsPerPage;
         this.list = that.list;
         this.rowStyle = that.rowStyle;
-        this.keys = function() { return typeof(this.list()[0]) === 'object' ? Object.keys(this.list()[0]) : [] };
 
         // Use defined headers or pull keys from the object schema
-        this.headers = that.headers().length > 0 ? that.headers : this.keys;
+        this.headers = that.headers().length > 0 ? that.headers : keys.bind(this);
         // Use defined values for each cell or pull values from object schema
-        this.cells = that.cells().length > 0 ? that.cells : this.keys;
+        this.cells = that.cells().length > 0 ? that.cells : keys.bind(this);
 
         // Slice list into pages
         this.paginated = function() {
