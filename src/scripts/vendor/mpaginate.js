@@ -1,35 +1,43 @@
-function MPaginate() { 'use strict';
+// Constructor function for module
+function MPaginate() {
 
-    var that = this; // Hold reference to closure
-    var range = function(start, stop) {
+    // Namespace for module
+    var mpaginate = {};
+
+    function range(start, stop) {
         var length = Math.max(Math.ceil((stop - start)), 0);
         var idx = 0;
         var range = new Array(length);
         while(idx < length) { range[idx++] = start; ++start; }
         return range;
     }
-    var keys = function() {
-        return typeof(this.list()[0]) === 'object' ? Object.keys(this.list()[0]) : []
-    };
 
-    this.rowsPerPage = m.prop(5); // How many rows to show per page
-    this.list = m.prop([]); // A list of objects
-    this.headers = m.prop([]); // List of headers for <th> elements
-    this.cells = m.prop([]); // List of values to show for <td> elements
-    this.rowStyle = m.prop({}); // An object for styling each <tr>
+    function keys(list) {
+        return function() {
+            return typeof(list()[0]) === 'object' ? Object.keys(list()[0]) : []
+        }
+    }
 
-    this.controller = function() {
+    // Public variables (model)
+    mpaginate.rowsPerPage = m.prop(5); // How many rows to show per page
+    mpaginate.list = m.prop([]); // A list of objects to be paginated
+    mpaginate.headers = m.prop([]); // List of headers for <th> elements
+    mpaginate.cells = m.prop([]); // List of values to show for <td> elements
+    mpaginate.rowAttr = m.prop({}); // An object for styling each <tr>
+
+    // Controller
+    mpaginate.controller = function() {
         this.currentPage = m.prop(1); // Current page is reset on each load
         this.startPage = m.prop(0); // The first page the controls start on
         this.endPage = m.prop(5); // The last page to show in the controls
-        this.rowsPerPage = that.rowsPerPage;
-        this.list = that.list;
-        this.rowStyle = that.rowStyle;
+        this.rowsPerPage = mpaginate.rowsPerPage;
+        this.list = mpaginate.list;
+        this.rowAttr = mpaginate.rowAttr;
 
         // Use defined headers or pull keys from the object schema
-        this.headers = that.headers().length > 0 ? that.headers : keys.bind(this);
+        this.headers = mpaginate.headers().length > 0 ? mpaginate.headers : keys(this.list);
         // Use defined values for each cell or pull values from object schema
-        this.cells = that.cells().length > 0 ? that.cells : keys.bind(this);
+        this.cells = mpaginate.cells().length > 0 ? mpaginate.cells : keys(this.list);
 
         // Slice list into pages
         this.paginated = function() {
@@ -67,8 +75,9 @@ function MPaginate() { 'use strict';
         }.bind(this);
     }
 
-    this.view = function(ctrl) {
-        return m('div.mpaginate', [
+    // View
+    mpaginate.view = function(ctrl) {
+        return [
             m('table.table', [
                 m('thead', [
                     m('tr', [
@@ -79,8 +88,9 @@ function MPaginate() { 'use strict';
                 ]),
                 m('tbody', [
                     ctrl.paginated().map(function(item, index) {
-                        return m('tr', typeof(ctrl.rowStyle()) === 'function' ? ctrl.rowStyle().call(item) : ctrl.rowStyle(),
-                            [ ctrl.cells().map(function(cell, index) { return typeof(cell) === 'function' ?  m('td', cell.call(item)) : m('td', item[cell]) })
+                        return m('tr', typeof ctrl.rowAttr() === 'function' ? ctrl.rowAttr().call(item) : ctrl.rowAttr(),
+                            [ ctrl.cells().map(function(cell, index) {
+                                return typeof cell === 'function' ?  m('td', cell.call(item)) : m('td', item[cell]) })
                         ])
                     })
                 ]),
@@ -96,6 +106,8 @@ function MPaginate() { 'use strict';
                     }),
                 ctrl.numPages().length > ctrl.endPage() ? m('li', [ m('a.btn.btn-default.btn-sm', {onclick: ctrl.nextPage}, '>>')]) : null
             ])
-        ])
+        ]
     }
+
+    return mpaginate;
 }

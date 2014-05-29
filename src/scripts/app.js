@@ -38,7 +38,7 @@
     chats.paginate.rowsPerPage(6);
     chats.paginate.headers(['Transcript', 'Date', 'Customer', 'Racker']);
     chats.paginate.cells([chats.loadButton, 'answeredAt', 'customerName', 'rackerName']);
-    chats.paginate.rowStyle(function() { return {class: this.chatID == transcripts.chatID() ? 'selected' : null} });
+    chats.paginate.rowAttr(function() { return {class: this.chatID == transcripts.chatID() ? 'selected' : null} });
 
     // Controller
     chats.controller = function() {
