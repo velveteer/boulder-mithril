@@ -1,22 +1,23 @@
 (function(window) {
     'use strict';
 
+    var mpaginate = require('./mpaginate');
+
     var get = function(url) {
         return m.request({method: 'GET', url: url})
     }
 
     var metrics = {};
-        metrics.paginate = new MPaginate();
+    metrics.list = m.prop([]);
 
     metrics.controller = function() {
+        this.mpaginate = new mpaginate.controller(metrics.list);
         this.sso = m.route.param('sso');
         var url = '/api/chats/sso/'+this.sso;
-        get(url)
-            .then(metrics.paginate.list)
-            .then(function() { return m.module(document.getElementById('main'), metrics.paginate) });
+        get(url).then(metrics.list)
     }
 
-    metrics.view = function(ctrl) { return m('div#metrics') };
+    metrics.view = function(ctrl) { return mpaginate.view(ctrl.mpaginate); }
 
     var chats = {};
 
@@ -33,27 +34,25 @@
     // Model
     chats.account = m.prop('');
     chats.accountType = m.prop('ddi');
+    chats.list = m.prop([]);
 
-    chats.paginate = new MPaginate();
-    chats.paginate.rowsPerPage(6);
-    chats.paginate.headers(['Transcript', 'Date', 'Customer', 'Racker']);
-    chats.paginate.cells([chats.loadButton, 'answeredAt', 'customerName', 'rackerName']);
-    chats.paginate.rowAttr(function() { return {class: this.chatID == transcripts.chatID() ? 'selected' : null} });
+    chats.options = {
+        rowsPerPage: 6,
+        headers: ['Transcript', 'Date', 'Customer', 'Racker'],
+        cells: [chats.loadButton, 'answeredAt', 'customerName', 'rackerName'],
+        rowAttr: function() { return {class: this.chatID == transcripts.chatID() ? 'selected' : null} }
+    }
 
     // Controller
     chats.controller = function() {
         this.account = chats.account;
         this.accountType = chats.accountType;
-
+        this.mpaginate = new mpaginate.controller(chats.list, chats.options);
         this.search = function(e) {
             e.preventDefault();
             if (!isNaN(parseInt(this.account()))) {
                 var url = 'api/chats/' + this.accountType() + '/' + this.account();
-                get(url)
-                    .then(chats.paginate.list)
-                    .then(function() {
-                        return m.module(document.getElementById('table'), chats.paginate);
-                    })
+                get(url).then(chats.list)
             }
         }.bind(this);
     };
@@ -90,7 +89,7 @@
                         ]),
                     ])
                 ]),
-                m('div#table')
+                mpaginate.view(ctrl.mpaginate)
             ]),
             m('div.col-md-6.unextended#transcripts')
         ])
