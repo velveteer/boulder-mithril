@@ -19,9 +19,9 @@ gulp.task('copy-index', function() {
         .pipe(gulp.dest('./dist'))
 });
 
-gulp.task('copy-cssAssets', function() {
+gulp.task('copy-assets', function() {
     gulp.src('./src/styles/assets/*')
-        .pipe(gulp.dest('./dist/css'))
+        .pipe(gulp.dest('./dist/styles'))
 });
 
 gulp.task('copy-fonts', function() {
@@ -38,18 +38,20 @@ gulp.task('scripts', function() {
             .pipe(plugins.jshint.reporter(require('jshint-stylish'))),
 
         // Concatenate, minify and copy all JavaScript (except vendor scripts)
-        gulp.src(['!./src/scripts/vendor/**/*.js', './src/scripts/**/*.js'])
-            .pipe(plugins.concat('app.js'))
+        gulp.src(['!./src/scripts/vendor/**/*.js', './src/scripts/app.js'])
+            .pipe(plugins.browserify({
+                insertGlobals: true
+            }))
 //            .pipe(plugins.uglify())
-            .pipe(gulp.dest('./dist/js'))
+            .pipe(gulp.dest('./dist/scripts'))
     );
 });
 
-gulp.task('vendorJS', function(){
+gulp.task('vendorScripts', function(){
     gulp.src(['!./bower_components/**/*.min.js',
         './bower_components/**/*.js', './src/scripts/vendor/**/*.js'])
         .pipe(plugins.concat('vendor.js'))
-        .pipe(gulp.dest('./dist/js'));
+        .pipe(gulp.dest('./dist/scripts'));
 });
 
 gulp.task('styles', function() {
@@ -58,14 +60,14 @@ gulp.task('styles', function() {
         .pipe(plugins.less())
         .pipe(plugins.rename('app.css'))
         .pipe(plugins.csso())
-        .pipe(gulp.dest('./dist/css'))
+        .pipe(gulp.dest('./dist/styles'))
 });
 
-gulp.task('vendorCSS', function(){
+gulp.task('vendorStyles', function(){
     gulp.src(['!./bower_components/**/*.min.css',
         './bower_components/**/*.css', './src/styles/vendor/*.css'])
         .pipe(plugins.concat('vendor.css'))
-        .pipe(gulp.dest('./dist/css'));
+        .pipe(gulp.dest('./dist/styles'));
 });
 
 gulp.task('connect', plugins.connect.server({
@@ -85,19 +87,18 @@ gulp.task('connect', plugins.connect.server({
 
 gulp.task('watch',function(){
     gulp.watch([
-        'src/**/*.html',
-        'src/**/*.js',
-        'src/**/*.less'
+        './src/**/*.html',
+        './src/**/*.js',
+        './src/**/*.less'
     ], function(event) {
         return gulp.src(event.path)
             .pipe(plugins.connect.reload());
     });
     gulp.watch('./src/**/*.js',['scripts']);
     gulp.watch('./src/**/*.less',['styles']);
-    gulp.watch('./src/img/**/*',['copy-images']);
     gulp.watch('./src/index.html',['copy-index']);
 
 });
 
 // The default task (called when you run `gulp`)
-gulp.task('default', ['clean', 'connect', 'copy-index', 'copy-cssAssets', 'copy-fonts', 'scripts', 'styles', 'vendorJS', 'vendorCSS', 'watch']);
+gulp.task('default', ['clean', 'connect', 'copy-index', 'copy-assets', 'copy-fonts', 'scripts', 'styles', 'vendorScripts', 'vendorStyles', 'watch']);
