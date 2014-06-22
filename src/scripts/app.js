@@ -91,7 +91,7 @@
                 ]),
                 mpaginate.view(ctrl.mpaginate)
             ]),
-            m('div.col-md-6.unextended#transcripts')
+            m('div.col-md-6#transcripts')
         ])
     };
 
@@ -100,8 +100,6 @@
     // Model
     transcripts.chatID = m.prop('');
     transcripts.list = m.prop([]);
-    transcripts.sized = m.prop(false);
-    transcripts.extended = m.prop(false);
 
     transcripts.get = function(e) {
         var url = 'api/transcripts/' + e.target.value;
@@ -114,74 +112,20 @@
 
     // Controller
     transcripts.controller = function() {
-
-        this.sized = transcripts.sized;
-        this.extended = transcripts.extended;
         this.list = transcripts.list;
-
-        this.resize = function() {
-            if (this.sized()) {
-                this.sized(false);
-                transcriptMinimize();
-            } else {
-                this.sized(true);
-                transcriptMaximize();
-            }
-        }.bind(this)
-
-        this.extend = function() {
-            if (this.extended()) {
-                this.extended(false);
-                transcriptUndoExtend();
-            } else {
-                this.extended(true);
-                transcriptDoExtend();
-            }
-        }.bind(this)
     }
 
     // View
     transcripts.view = function(ctrl) {
-        return m('div', [
-            m('div#transcripts-controls', [
-                m('i.fa.fa-text-height.fa-2x', {onclick: ctrl.extend, class: ctrl.extended() ? 'enabled' : ''}),
-                m('i.fa.fa-text-width.fa-2x', {onclick: ctrl.resize, class: ctrl.sized() ? 'enabled' : ''})
-            ]),
-            ctrl.list().map(function(transcript, index) {
-                return [
-                    m('div.text-line', [
-                        m('span[style=font-style:oblique]', moment(transcript.createdAt).format('h:mma').toString() + ' '),
-                        m('span', {style: {color: transcript.personType ? '#660000' : '#003399', fontWeight: 'bold'}}, transcript.name + ': '),
-                        m('span', transcript.text)
-                    ])
-                ]
-            })
-        ])
-    }
-
-    // jQuery Utilities
-    var transcriptMaximize = function() {
-        $('#transcripts').removeClass('col-md-6');
-        $('#transcripts').addClass('col-md-8');
-        $('#chats').removeClass('col-md-6');
-        $('#chats').addClass('col-md-4');
-    }
-
-    var transcriptMinimize = function() {
-        $('#transcripts').removeClass('col-md-8');
-        $('#transcripts').addClass('col-md-6');
-        $('#chats').removeClass('col-md-4');
-        $('#chats').addClass('col-md-6');
-    }
-
-    var transcriptDoExtend = function() {
-        $('#transcripts').removeClass('unextended');
-        $('#transcripts').addClass('extended');
-    }
-
-    var transcriptUndoExtend = function() {
-        $('#transcripts').removeClass('extended');
-        $('#transcripts').addClass('unextended');
+        return ctrl.list().map(function(transcript, index) {
+            return [
+                m('div.text-line', [
+                    m('span[style=font-style:oblique]', moment(transcript.createdAt).format('h:mma').toString() + ' '),
+                    m('span', {style: {color: transcript.personType ? '#660000' : '#003399', fontWeight: 'bold'}}, transcript.name + ': '),
+                    m('span', transcript.text)
+                ])
+            ]
+        })
     }
 
     m.route.mode = 'pathname';
